@@ -14,7 +14,8 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 // Polyfill Buffer for browser
 window.Buffer = Buffer;
 
-const RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+// Free public RPCs as fallbacks - QuickNode via env var if available
+const RPC_ENDPOINT = import.meta.env.VITE_RPC_URL || 'https://rpc.ankr.com/solana';
 
 function Root() {
   const wallets = useMemo(() => [new PhantomWalletAdapter()], []);

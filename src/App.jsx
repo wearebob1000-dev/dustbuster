@@ -6,32 +6,30 @@ function App() {
   const { connected } = useWallet();
 
   return (
-    <div className="min-h-screen bg-gray-950">
-      <header className="border-b border-gray-800 bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🧹</span>
-            <h1 className="text-xl font-bold text-gray-100">
-              Dust<span className="text-purple-400">Buster</span>
-            </h1>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <header className="header">
+        <div className="header-inner">
+          <div className="header-brand">
+            <span className="header-logo">🧹</span>
+            <span className="header-title">DustBuster</span>
           </div>
           {connected && (
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full" />
-              <span className="text-sm text-gray-400">Connected</span>
+            <div className="header-status">
+              <div className="header-status-dot" />
+              <span>Connected</span>
             </div>
           )}
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="container" style={{ flex: 1, padding: '0 20px' }}>
         {connected ? <Scanner /> : <Landing />}
       </main>
 
-      <footer className="border-t border-gray-800 mt-auto">
-        <div className="max-w-6xl mx-auto px-4 py-4 text-center text-gray-600 text-sm">
-          DustBuster — Reclaim your locked SOL
-        </div>
+      <footer className="footer">
+        <p className="footer-text">
+          Built by <span className="footer-brand">WEARE Inc</span>
+        </p>
       </footer>
     </div>
   );

@@ -120,23 +120,25 @@ export default function Scanner() {
       .reduce((sum, a) => sum + a.rentSol, 0),
   };
 
+  const walletDisplay = publicKey
+    ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
+    : '';
+
   return (
-    <div>
+    <div className="scanner">
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+      <div className="scanner-header">
         <div>
-          <h2 className="text-2xl font-bold text-gray-100">Wallet Scanner</h2>
-          <p className="text-gray-500 text-sm mt-1">
-            {publicKey ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}` : ''}
-          </p>
+          <h2 className="scanner-title">Wallet Scanner</h2>
+          <p className="scanner-wallet">{walletDisplay}</p>
         </div>
-        <div className="flex gap-3 items-center">
+        <div className="scanner-actions">
           <button
             onClick={scan}
             disabled={scanning}
-            className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 text-gray-200 font-medium rounded-xl transition-colors cursor-pointer"
+            className="btn btn-ghost"
           >
-            {scanning ? 'Scanning...' : 'Rescan'}
+            {scanning ? 'Scanning...' : '↻ Rescan'}
           </button>
           <WalletMultiButton />
         </div>
@@ -144,10 +146,10 @@ export default function Scanner() {
 
       {/* Scanning state */}
       {scanning && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center">
-          <div className="text-4xl mb-4 animate-spin inline-block">🧹</div>
-          <p className="text-gray-300 text-lg">{scanProgress || 'Scanning...'}</p>
-          <p className="text-gray-500 text-sm mt-2">
+        <div className="glass-card scan-loading">
+          <div className="scan-spinner">🧹</div>
+          <p className="scan-text">{scanProgress || 'Scanning...'}</p>
+          <p className="scan-subtext">
             This may take a moment for wallets with many tokens
           </p>
         </div>
@@ -155,12 +157,9 @@ export default function Scanner() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-950 border border-red-800 rounded-2xl p-6 mb-6">
-          <p className="text-red-300">{error}</p>
-          <button
-            onClick={scan}
-            className="mt-3 text-sm text-red-400 hover:text-red-300 underline cursor-pointer"
-          >
+        <div className="error-box">
+          <p className="error-text">{error}</p>
+          <button onClick={scan} className="error-retry">
             Try again
           </button>
         </div>
@@ -170,69 +169,47 @@ export default function Scanner() {
       {!scanning && accounts.length > 0 && (
         <>
           {/* Stats cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <div className="text-gray-500 text-xs uppercase tracking-wider">
-                Zero Balance
-              </div>
-              <div className="text-2xl font-bold text-gray-200 mt-1">
-                {stats.zero}
-              </div>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-label">Zero Balance</div>
+              <div className="stat-value default">{stats.zero}</div>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <div className="text-gray-500 text-xs uppercase tracking-wider">
-                Dead Tokens
-              </div>
-              <div className="text-2xl font-bold text-red-400 mt-1">
-                {stats.dead}
-              </div>
+            <div className="stat-card">
+              <div className="stat-label">Dead Tokens</div>
+              <div className="stat-value danger">{stats.dead}</div>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <div className="text-gray-500 text-xs uppercase tracking-wider">
-                Low Value Dust
-              </div>
-              <div className="text-2xl font-bold text-yellow-400 mt-1">
-                {stats.dust}
-              </div>
+            <div className="stat-card">
+              <div className="stat-label">Low Value Dust</div>
+              <div className="stat-value warning">{stats.dust}</div>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <div className="text-gray-500 text-xs uppercase tracking-wider">
-                Reclaimable SOL
-              </div>
-              <div className="text-2xl font-bold text-green-400 mt-1">
-                ~{stats.totalRent.toFixed(4)}
-              </div>
+            <div className="stat-card">
+              <div className="stat-label">Reclaimable SOL</div>
+              <div className="stat-value success">~{stats.totalRent.toFixed(4)}</div>
             </div>
           </div>
 
           {/* Token table */}
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
-            <TokenTable
-              accounts={accounts}
-              selected={selected}
-              onToggle={toggleAccount}
-              onSelectAll={selectAll}
-            />
-          </div>
+          <TokenTable
+            accounts={accounts}
+            selected={selected}
+            onToggle={toggleAccount}
+            onSelectAll={selectAll}
+          />
 
           {/* Cleanup bar */}
           {selected.size > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-4 z-40">
-              <div className="max-w-6xl mx-auto flex items-center justify-between">
-                <div>
-                  <span className="text-gray-300 font-medium">
-                    {selected.size} account{selected.size !== 1 ? 's' : ''}{' '}
-                    selected
+            <div className="cleanup-bar">
+              <div className="cleanup-bar-inner">
+                <div className="cleanup-info">
+                  <span className="cleanup-count">
+                    {selected.size} account{selected.size !== 1 ? 's' : ''} selected
                   </span>
-                  <span className="text-gray-500 ml-3">
+                  <span className="cleanup-sol">
                     Reclaim ~{reclaimableSol.toFixed(4)} SOL
                   </span>
                 </div>
-                <button
-                  onClick={handleCleanup}
-                  className="px-8 py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors text-lg cursor-pointer"
-                >
-                  Clean Up — Reclaim {reclaimableSol.toFixed(4)} SOL
+                <button onClick={handleCleanup} className="cleanup-btn">
+                  🧹 Clean Up — Reclaim {reclaimableSol.toFixed(4)} SOL
                 </button>
               </div>
             </div>
@@ -242,14 +219,10 @@ export default function Scanner() {
 
       {/* Empty state */}
       {!scanning && !error && accounts.length === 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center">
-          <div className="text-5xl mb-4">&#10024;</div>
-          <h3 className="text-xl font-bold text-gray-200">
-            Your wallet is clean!
-          </h3>
-          <p className="text-gray-500 mt-2">
-            No token accounts found to clean up.
-          </p>
+        <div className="glass-card empty-state">
+          <div className="empty-icon">✨</div>
+          <h3 className="empty-title">Your wallet is clean!</h3>
+          <p className="empty-text">No token accounts found to clean up.</p>
         </div>
       )}
 
