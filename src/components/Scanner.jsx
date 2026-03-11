@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { useTokenAccounts } from '../hooks/useTokenAccounts';
-import { buildCleanupTransactions, RENT_PER_ACCOUNT } from '../utils/solana';
+import { buildCleanupTransactions, RENT_PER_ACCOUNT, FEE_PCT } from '../utils/solana';
 import TokenTable from './TokenTable';
 import CleanupProgress from './CleanupProgress';
 
@@ -253,9 +253,12 @@ export default function Scanner() {
                   <span className="cleanup-sol">
                     Reclaim ~{reclaimableSol.toFixed(4)} SOL
                   </span>
+                  <span className="cleanup-fee">
+                    Fee: {(reclaimableSol * FEE_PCT).toFixed(4)} SOL ({FEE_PCT * 100}%) · You receive: {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
+                  </span>
                 </div>
                 <button onClick={handleCleanup} className="cleanup-btn">
-                  🧹 Clean Up — Reclaim {reclaimableSol.toFixed(4)} SOL
+                  🧹 Clean Up — Receive {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
                 </button>
               </div>
             </div>

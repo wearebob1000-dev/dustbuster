@@ -3,10 +3,12 @@ import {
   createCloseAccountInstruction,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
-import { PublicKey, Transaction } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 export const RENT_PER_ACCOUNT = 0.00203928; // SOL rent for a token account
-const BATCH_SIZE = 7; // Keep transactions under 1232 byte limit (burn + close = ~2 instructions per account)
+export const FEE_PCT = 0.05; // 5% service fee
+export const FEE_WALLET = new PublicKey('4pATFER7WrbRNAicBaMGEWi546ChfCtqNorynakuwMQ5');
+const BATCH_SIZE = 6; // Slightly smaller to fit fee transfer instruction
 
 // Build batched transactions for cleanup
 export function buildCleanupTransactions(accounts, walletPublicKey) {
@@ -41,10 +43,24 @@ export function buildCleanupTransactions(accounts, walletPublicKey) {
       );
     }
 
+    // Add 5% fee transfer for this batch
+    const batchRentLamports = Math.floor(batch.length * RENT_PER_ACCOUNT * LAMPORTS_PER_SOL);
+    const feeLamports = Math.floor(batchRentLamports * FEE_PCT);
+    if (feeLamports > 0) {
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: walletPublicKey,
+          toPubkey: FEE_WALLET,
+          lamports: feeLamports,
+        })
+      );
+    }
+
     transactions.push({
       tx,
       count: batch.length,
       accounts: batch,
+      feeLamports,
     });
   }
 

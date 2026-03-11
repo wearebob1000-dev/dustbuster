@@ -1181,3 +1181,10 @@ a:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 32px rgba(0, 255, 136, 0.3);
 }
+
+.cleanup-fee {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  display: block;
+  margin-top: 4px;
+}
