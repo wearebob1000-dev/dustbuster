@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     nodePolyfills({ include: ['buffer', 'crypto', 'stream', 'util'] }),
   ],
-  base: '/dustbuster/',
+  base: '/',
   define: {
     'process.env': {},
     global: 'globalThis',
