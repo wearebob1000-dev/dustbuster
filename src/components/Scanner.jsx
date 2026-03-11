@@ -97,7 +97,7 @@ export default function Scanner() {
         );
         const sendResults = await Promise.all(sendPromises);
 
-        // Confirm all sends in parallel
+        // Confirm all sends in parallel — with fallback status check
         const confirmPromises = sendResults.map(async (sr) => {
           if (!sr.ok) return { ...sr, confirmed: false };
           try {
@@ -107,6 +107,14 @@ export default function Scanner() {
             );
             return { ...sr, confirmed: true };
           } catch (err) {
+            // Confirmation timed out — check if tx actually landed
+            try {
+              const status = await connection.getSignatureStatus(sr.sig);
+              if (status?.value?.confirmationStatus === 'confirmed' || 
+                  status?.value?.confirmationStatus === 'finalized') {
+                return { ...sr, confirmed: true };
+              }
+            } catch (_) { /* ignore */ }
             return { ...sr, confirmed: false, err };
           }
         });
@@ -269,7 +277,10 @@ export default function Scanner() {
                   </span>
                 </div>
                 <button onClick={handleCleanup} className="cleanup-btn">
-                  🧹 Clean Up — Receive {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
+                  <span>🧹 Clean Up</span>
+                  <span style={{ display: 'block', fontSize: '1.1rem', marginTop: '4px' }}>
+                    Receive {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
+                  </span>
                 </button>
               </div>
             </div>
