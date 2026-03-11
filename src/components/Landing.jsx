@@ -68,6 +68,22 @@ export default function Landing() {
           the ones other tools leave behind.
         </p>
       </div>
+
+      <div className="landing-disclaimer" style={{
+        marginTop: '24px',
+        padding: '16px 20px',
+        borderRadius: '12px',
+        background: 'rgba(255, 100, 100, 0.05)',
+        border: '1px solid rgba(255, 100, 100, 0.15)',
+        maxWidth: '500px',
+        margin: '24px auto 0',
+      }}>
+        <p style={{ fontSize: '0.8rem', color: 'rgba(255, 150, 150, 0.8)', textAlign: 'center', margin: 0 }}>
+          ⚠️ <strong style={{ color: 'rgba(255, 150, 150, 0.95)' }}>Warning:</strong> All transactions on Solana are <strong>irreversible</strong>.
+          Tokens marked as dead or dust will be <strong>permanently burned</strong> and their accounts closed.
+          NFTs are excluded from scans, but please review your selections carefully before confirming.
+        </p>
+      </div>
     </div>
   );
 }

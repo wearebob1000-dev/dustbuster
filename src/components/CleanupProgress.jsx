@@ -111,6 +111,42 @@ export default function CleanupProgress({ progress, onClose }) {
               </p>
             )}
 
+            {successBatches > 0 && (
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                  `Just recovered ~${reclaimedSol.toFixed(2)} SOL from ${actualClosed} dead and dust token accounts using @DustBusterApp 🧹\n\nReclaim your locked SOL 👇\nhttps://dustbuster.app`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-share-x"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '12px',
+                  background: '#000',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  color: '#fff',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  marginBottom: '12px',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                }}
+                onMouseOver={e => { e.currentTarget.style.background = '#1a1a1a'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; }}
+                onMouseOut={e => { e.currentTarget.style.background = '#000'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'; }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                Share on X
+              </a>
+            )}
+
             <button onClick={onClose} className="btn-done">
               Done — Rescan Wallet
             </button>

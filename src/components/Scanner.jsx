@@ -276,12 +276,17 @@ export default function Scanner() {
                     Fee: {(reclaimableSol * FEE_PCT).toFixed(4)} SOL ({FEE_PCT * 100}%) · You receive: {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
                   </span>
                 </div>
-                <button onClick={handleCleanup} className="cleanup-btn">
-                  <span>🧹 Clean Up</span>
-                  <span style={{ display: 'block', fontSize: '1.1rem', marginTop: '4px' }}>
-                    Receive {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
-                  </span>
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                  <button onClick={handleCleanup} className="cleanup-btn">
+                    <span>🧹 Clean Up</span>
+                    <span style={{ display: 'block', fontSize: '1.1rem', marginTop: '4px' }}>
+                      Receive {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
+                    </span>
+                  </button>
+                  <p style={{ fontSize: '0.7rem', color: 'rgba(255,150,150,0.7)', margin: 0, textAlign: 'center' }}>
+                    ⚠️ Irreversible — selected tokens will be permanently burned
+                  </p>
+                </div>
               </div>
             </div>
           )}
