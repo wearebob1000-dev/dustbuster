@@ -28,7 +28,7 @@ function App() {
 
       <footer className="footer">
         <p className="footer-text">
-          Built by <span className="footer-brand">WEARE Inc</span>
+          <span className="footer-brand">DustBuster</span>
         </p>
       </footer>
     </div>
