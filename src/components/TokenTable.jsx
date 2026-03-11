@@ -5,15 +5,6 @@ const CATEGORY_STYLES = {
   valuable: { icon: '✅', badgeClass: 'badge-valuable', label: 'Has Value' },
 };
 
-function formatBalance(balance) {
-  if (balance === 0) return '0';
-  if (balance < 0.001) return '<0.001';
-  if (balance < 1) return balance.toFixed(4);
-  if (balance < 1000) return balance.toFixed(2);
-  if (balance < 1_000_000) return (balance / 1000).toFixed(1) + 'K';
-  return (balance / 1_000_000).toFixed(1) + 'M';
-}
-
 function truncateMint(mint) {
   return mint.slice(0, 4) + '...' + mint.slice(-4);
 }
@@ -51,11 +42,7 @@ export default function TokenTable({ accounts, selected, onToggle, onSelectAll }
               <th style={{ width: 44 }} />
               <th>Status</th>
               <th>Token</th>
-              <th className="hide-mobile">Mint</th>
-              <th className="text-right hide-mobile">Balance</th>
-              <th className="text-right hide-mobile">Value</th>
-              <th className="text-right hide-mobile">Liquidity</th>
-              <th className="text-right">Rent Locked</th>
+              <th>Mint</th>
             </tr>
           </thead>
           <tbody>
@@ -85,47 +72,25 @@ export default function TokenTable({ accounts, selected, onToggle, onSelectAll }
                     </span>
                   </td>
                   <td>
-                    <a
-                      href={`https://solscan.io/token/${acct.mint}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ textDecoration: 'none', color: 'inherit' }}
-                    >
-                      {acct.tokenSymbol ? (
-                        <span>
-                          <strong style={{ color: '#fff' }}>{acct.tokenSymbol}</strong>
-                          {acct.tokenName && (
-                            <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: '6px' }}>{acct.tokenName}</span>
-                          )}
-                        </span>
-                      ) : (
-                        <span className="td-mono" style={{ opacity: 0.6 }}>{truncateMint(acct.mint)}</span>
-                      )}
-                    </a>
+                    {acct.tokenSymbol ? (
+                      <span>
+                        <strong style={{ color: '#fff' }}>{acct.tokenSymbol}</strong>
+                        {acct.tokenName && (
+                          <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: '6px' }}>{acct.tokenName}</span>
+                        )}
+                      </span>
+                    ) : (
+                      <span style={{ opacity: 0.4, fontStyle: 'italic' }}>Unknown</span>
+                    )}
                   </td>
-                  <td className="td-mono hide-mobile">
+                  <td className="td-mono">
                     <a
                       href={`https://solscan.io/token/${acct.mint}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ opacity: 0.5 }}
                     >
                       {truncateMint(acct.mint)}
                     </a>
-                  </td>
-                  <td className="td-right td-mono hide-mobile">
-                    {formatBalance(acct.balance)}
-                  </td>
-                  <td className="td-right hide-mobile">
-                    {acct.valueUsd > 0 ? `$${acct.valueUsd.toFixed(4)}` : '-'}
-                  </td>
-                  <td className="td-right hide-mobile">
-                    {acct.hasLiquidity
-                      ? `$${acct.liquidity.toLocaleString()}`
-                      : '-'}
-                  </td>
-                  <td className="td-right td-mono">
-                    {acct.rentSol.toFixed(4)} SOL
                   </td>
                 </tr>
               );
