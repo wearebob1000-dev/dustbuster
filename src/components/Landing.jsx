@@ -3,7 +3,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 export default function Landing() {
   return (
     <div className="landing">
-      <div className="landing-emoji">🧹</div>
+      <img src="/logo.jpg" alt="DustBuster" className="landing-logo" />
       <h1 className="landing-title">DustBuster</h1>
       <p className="landing-tagline">
         The smartest way to reclaim locked SOL from your wallet.

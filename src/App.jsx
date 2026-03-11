@@ -10,7 +10,7 @@ function App() {
       <header className="header">
         <div className="header-inner">
           <div className="header-brand">
-            <span className="header-logo">🧹</span>
+            <img src="/logo.jpg" alt="" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
             <span className="header-title">DustBuster</span>
           </div>
           {connected && (
