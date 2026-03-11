@@ -5,6 +5,7 @@ import { useTokenAccounts } from '../hooks/useTokenAccounts';
 import { buildCleanupTransactions, RENT_PER_ACCOUNT, FEE_PCT } from '../utils/solana';
 import TokenTable from './TokenTable';
 import CleanupProgress from './CleanupProgress';
+import ConfirmDialog from './ConfirmDialog';
 
 export default function Scanner() {
   const { connection } = useConnection();
@@ -12,6 +13,7 @@ export default function Scanner() {
   const { accounts, scanning, scanProgress, error, scan } = useTokenAccounts();
   const [selected, setSelected] = useState(new Set());
   const [cleanupProgress, setCleanupProgress] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // Auto-scan on mount
   useEffect(() => {
@@ -208,6 +210,21 @@ export default function Scanner() {
       )}
 
       {/* Results */}
+      {/* Scan quality warning */}
+      {!scanning && scanProgress && scanProgress.includes('⚠️') && (
+        <div style={{
+          padding: '12px 16px',
+          borderRadius: '12px',
+          background: 'rgba(255,200,0,0.05)',
+          border: '1px solid rgba(255,200,0,0.2)',
+          marginBottom: '16px',
+          fontSize: '0.85rem',
+          color: 'rgba(255,200,100,0.9)',
+        }}>
+          {scanProgress}
+        </div>
+      )}
+
       {!scanning && accounts.length > 0 && (
         <>
           {/* Stats cards */}
@@ -272,7 +289,7 @@ export default function Scanner() {
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                  <button onClick={handleCleanup} className="cleanup-btn">
+                  <button onClick={() => setShowConfirm(true)} className="cleanup-btn">
                     <span>🧹 Clean Up</span>
                     <span style={{ display: 'block', fontSize: '1.1rem', marginTop: '4px' }}>
                       Receive {(reclaimableSol * (1 - FEE_PCT)).toFixed(4)} SOL
@@ -295,6 +312,15 @@ export default function Scanner() {
           <h3 className="empty-title">Your wallet is clean!</h3>
           <p className="empty-text">No token accounts found to clean up.</p>
         </div>
+      )}
+
+      {/* Confirmation dialog */}
+      {showConfirm && (
+        <ConfirmDialog
+          accounts={selectedAccounts}
+          onConfirm={() => { setShowConfirm(false); handleCleanup(); }}
+          onCancel={() => setShowConfirm(false)}
+        />
       )}
 
       {/* Cleanup progress modal */}

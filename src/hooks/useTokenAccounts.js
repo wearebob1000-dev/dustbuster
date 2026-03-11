@@ -25,21 +25,27 @@ export function useTokenAccounts() {
       const zeroBalance = raw.filter((a) => a.balance === 0);
       const withBalance = raw.filter((a) => a.balance > 0);
 
+      // SAFETY NET 1: Load Jupiter verified/community token list
+      // Any token on this list is KNOWN to have value — never allow burning
+      const allMints = [...new Set(raw.map(a => a.mint))];
+      setScanProgress('Loading Jupiter token safety list...');
+      const tokenNames = await getTokenNames(allMints);
+      const jupiterMints = new Set(tokenNames.keys()); // mints on Jupiter = protected
+
       // Check liquidity for accounts with balance
       const mintsToCheck = [...new Set(withBalance.map((a) => a.mint))];
       let liquidityMap = new Map();
 
       if (mintsToCheck.length > 0) {
         setScanProgress(
-          `Checking liquidity for ${mintsToCheck.length} tokens...`
+          `Checking liquidity for ${mintsToCheck.length} tokens (this may take a while for large wallets)...`
         );
         liquidityMap = await checkLiquidity(mintsToCheck);
       }
 
-      // Fetch token names for all mints
-      const allMints = [...new Set(raw.map(a => a.mint))];
-      setScanProgress(`Looking up token names...`);
-      const tokenNames = await getTokenNames(allMints);
+      // Count unverified for reporting
+      let unverifiedCount = 0;
+      let jupiterProtectedCount = 0;
 
       // Categorize all accounts
       const categorized = [];
@@ -68,12 +74,20 @@ export function useTokenAccounts() {
           verified: false,
         };
         const valueUsd = acct.balance * info.priceUsd;
+        const isOnJupiter = jupiterMints.has(acct.mint);
 
         let category, categoryLabel;
-        if (!info.verified) {
+
+        // SAFETY NET 1: Jupiter-listed tokens are ALWAYS protected
+        if (isOnJupiter && acct.balance > 0) {
+          category = 'valuable';
+          categoryLabel = 'Known Token';
+          jupiterProtectedCount++;
+        } else if (!info.verified) {
           // Could not verify liquidity — DO NOT allow burning
           category = 'unverified';
           categoryLabel = '⚠️ Unverified';
+          unverifiedCount++;
         } else if (!info.hasLiquidity) {
           category = 'dead';
           categoryLabel = 'Dead Token';
@@ -90,7 +104,7 @@ export function useTokenAccounts() {
           ...acct,
           category,
           categoryLabel,
-          hasLiquidity: info.hasLiquidity,
+          hasLiquidity: info.hasLiquidity || isOnJupiter,
           priceUsd: info.priceUsd,
           valueUsd,
           liquidity: info.liquidity,
@@ -105,7 +119,15 @@ export function useTokenAccounts() {
       categorized.sort((a, b) => order[a.category] - order[b.category]);
 
       setAccounts(categorized);
-      setScanProgress('');
+
+      // Report scan quality
+      if (unverifiedCount > 0) {
+        setScanProgress(
+          `⚠️ ${unverifiedCount} tokens couldn't be verified (DexScreener rate limit). These are protected from burning. Rescan to retry.`
+        );
+      } else {
+        setScanProgress('');
+      }
     } catch (err) {
       setError(err.message);
     } finally {
