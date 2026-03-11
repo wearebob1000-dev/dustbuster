@@ -68,14 +68,25 @@ export async function fetchTokenAccounts(connection, walletPublicKey) {
     { programId: TOKEN_PROGRAM_ID }
   );
 
-  return response.value.map((item) => {
-    const info = item.account.data.parsed.info;
-    return {
-      address: item.pubkey.toBase58(),
-      mint: info.mint,
-      balance: info.tokenAmount.uiAmount || 0,
-      balanceRaw: info.tokenAmount.amount,
-      decimals: info.tokenAmount.decimals,
-    };
-  });
+  return response.value
+    .filter((item) => {
+      // Exclude NFTs: decimals 0 with supply of 1 are likely NFTs
+      const info = item.account.data.parsed.info;
+      const decimals = info.tokenAmount.decimals;
+      const amount = parseInt(info.tokenAmount.amount);
+      // Keep: fungible tokens (decimals > 0, or zero-balance accounts regardless)
+      // Skip: decimals 0 with balance of exactly 1 (likely NFT)
+      if (decimals === 0 && amount === 1) return false;
+      return true;
+    })
+    .map((item) => {
+      const info = item.account.data.parsed.info;
+      return {
+        address: item.pubkey.toBase58(),
+        mint: info.mint,
+        balance: info.tokenAmount.uiAmount || 0,
+        balanceRaw: info.tokenAmount.amount,
+        decimals: info.tokenAmount.decimals,
+      };
+    });
 }
