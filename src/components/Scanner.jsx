@@ -62,63 +62,72 @@ export default function Scanner() {
     });
 
     try {
-      // Get a fresh blockhash for all transactions
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash();
-
-      // Prepare all transactions with the same blockhash
-      const rawTxs = batches.map(({ tx }) => {
-        tx.recentBlockhash = blockhash;
-        tx.lastValidBlockHeight = lastValidBlockHeight;
-        tx.feePayer = publicKey;
-        return tx;
-      });
-
-      // Sign ALL transactions in one popup
-      setCleanupProgress((prev) => ({ ...prev, status: 'signing' }));
-      const signedTxs = signAllTransactions
-        ? await signAllTransactions(rawTxs)
-        : await Promise.all(rawTxs.map((tx) => signTransaction(tx)));
-
-      // Send them one by one
+      // Process in waves of 10 txs to stay within blockhash window
+      const WAVE_SIZE = 10;
       let completed = 0;
       let failed = 0;
       const results = [];
 
-      for (let i = 0; i < signedTxs.length; i++) {
-        setCleanupProgress((prev) => ({
-          ...prev,
-          status: 'processing',
-          currentBatch: i + 1,
-        }));
+      for (let w = 0; w < batches.length; w += WAVE_SIZE) {
+        const wave = batches.slice(w, w + WAVE_SIZE);
 
-        try {
-          const sig = await connection.sendRawTransaction(
-            signedTxs[i].serialize(),
-            { skipPreflight: true }
-          );
-          await connection.confirmTransaction(
-            { signature: sig, blockhash, lastValidBlockHeight },
-            'confirmed'
-          );
+        // Fresh blockhash per wave
+        const { blockhash, lastValidBlockHeight } =
+          await connection.getLatestBlockhash();
 
-          completed += batches[i].count;
-          results.push({ success: true, sig });
-        } catch (err) {
-          failed += batches[i].count;
-          results.push({ success: false, error: err.message });
+        const rawTxs = wave.map(({ tx }) => {
+          tx.recentBlockhash = blockhash;
+          tx.lastValidBlockHeight = lastValidBlockHeight;
+          tx.feePayer = publicKey;
+          return tx;
+        });
+
+        // Sign this wave (one popup per wave)
+        setCleanupProgress((prev) => ({ ...prev, status: 'signing' }));
+        const signedTxs = signAllTransactions
+          ? await signAllTransactions(rawTxs)
+          : await Promise.all(rawTxs.map((tx) => signTransaction(tx)));
+
+        // Fire all sends in parallel (don't wait between sends)
+        setCleanupProgress((prev) => ({ ...prev, status: 'processing' }));
+        const sendPromises = signedTxs.map((signed, i) =>
+          connection.sendRawTransaction(signed.serialize(), { skipPreflight: true })
+            .then(sig => ({ sig, idx: i, ok: true }))
+            .catch(err => ({ err, idx: i, ok: false }))
+        );
+        const sendResults = await Promise.all(sendPromises);
+
+        // Confirm successful sends
+        for (const sr of sendResults) {
+          const batchIdx = w + sr.idx;
+          setCleanupProgress((prev) => ({ ...prev, currentBatch: batchIdx + 1 }));
+
+          if (!sr.ok) {
+            failed += wave[sr.idx].count;
+            results.push({ success: false, error: sr.err.message });
+          } else {
+            try {
+              await connection.confirmTransaction(
+                { signature: sr.sig, blockhash, lastValidBlockHeight },
+                'confirmed'
+              );
+              completed += wave[sr.idx].count;
+              results.push({ success: true, sig: sr.sig });
+            } catch (err) {
+              failed += wave[sr.idx].count;
+              results.push({ success: false, error: err.message });
+            }
+          }
+          setCleanupProgress((prev) => ({ ...prev, completed, failed, results }));
         }
-
-        setCleanupProgress((prev) => ({ ...prev, completed, failed, results }));
       }
 
       setCleanupProgress((prev) => ({ ...prev, status: 'done' }));
     } catch (err) {
-      // User rejected the signing popup
       setCleanupProgress((prev) => ({
         ...prev,
         status: 'done',
-        results: [{ success: false, error: err.message }],
+        results: [...(prev.results || []), { success: false, error: err.message }],
       }));
     }
   }, [publicKey, selected, accounts, connection, signTransaction, signAllTransactions]);

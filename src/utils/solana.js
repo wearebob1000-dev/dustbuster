@@ -8,60 +8,53 @@ import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana
 export const RENT_PER_ACCOUNT = 0.00203928; // SOL rent for a token account
 export const FEE_PCT = 0.05; // 5% service fee
 export const FEE_WALLET = new PublicKey('4pATFER7WrbRNAicBaMGEWi546ChfCtqNorynakuwMQ5');
-const BATCH_SIZE = 6; // Slightly smaller to fit fee transfer instruction
+const CLOSE_ONLY_BATCH = 10; // Zero-balance: just close (1 instruction each)
+const BURN_CLOSE_BATCH = 5;  // Has balance: burn+close (2 instructions each)
 
 // Build batched transactions for cleanup
 export function buildCleanupTransactions(accounts, walletPublicKey) {
+  const zeroAccounts = accounts.filter(a => a.balance === 0);
+  const burnAccounts = accounts.filter(a => a.balance > 0);
   const transactions = [];
 
-  for (let i = 0; i < accounts.length; i += BATCH_SIZE) {
-    const batch = accounts.slice(i, i + BATCH_SIZE);
+  // Batch zero-balance accounts (close only — more per tx)
+  for (let i = 0; i < zeroAccounts.length; i += CLOSE_ONLY_BATCH) {
+    const batch = zeroAccounts.slice(i, i + CLOSE_ONLY_BATCH);
     const tx = new Transaction();
-
     for (const account of batch) {
-      const tokenAccountPubkey = new PublicKey(account.address);
-
-      // If account has balance, burn first
-      if (account.balance > 0) {
-        tx.add(
-          createBurnInstruction(
-            tokenAccountPubkey,
-            new PublicKey(account.mint),
-            walletPublicKey,
-            BigInt(account.balanceRaw)
-          )
-        );
-      }
-
-      // Close the account to reclaim rent
-      tx.add(
-        createCloseAccountInstruction(
-          tokenAccountPubkey,
-          walletPublicKey, // rent destination
-          walletPublicKey  // authority
-        )
-      );
+      tx.add(createCloseAccountInstruction(
+        new PublicKey(account.address), walletPublicKey, walletPublicKey
+      ));
     }
-
-    // Add 5% fee transfer for this batch
-    const batchRentLamports = Math.floor(batch.length * RENT_PER_ACCOUNT * LAMPORTS_PER_SOL);
-    const feeLamports = Math.floor(batchRentLamports * FEE_PCT);
+    const feeLamports = Math.floor(batch.length * RENT_PER_ACCOUNT * LAMPORTS_PER_SOL * FEE_PCT);
     if (feeLamports > 0) {
-      tx.add(
-        SystemProgram.transfer({
-          fromPubkey: walletPublicKey,
-          toPubkey: FEE_WALLET,
-          lamports: feeLamports,
-        })
-      );
+      tx.add(SystemProgram.transfer({
+        fromPubkey: walletPublicKey, toPubkey: FEE_WALLET, lamports: feeLamports,
+      }));
     }
+    transactions.push({ tx, count: batch.length, accounts: batch, feeLamports });
+  }
 
-    transactions.push({
-      tx,
-      count: batch.length,
-      accounts: batch,
-      feeLamports,
-    });
+  // Batch burn+close accounts
+  for (let i = 0; i < burnAccounts.length; i += BURN_CLOSE_BATCH) {
+    const batch = burnAccounts.slice(i, i + BURN_CLOSE_BATCH);
+    const tx = new Transaction();
+    for (const account of batch) {
+      tx.add(createBurnInstruction(
+        new PublicKey(account.address), new PublicKey(account.mint),
+        walletPublicKey, BigInt(account.balanceRaw)
+      ));
+      tx.add(createCloseAccountInstruction(
+        new PublicKey(account.address), walletPublicKey, walletPublicKey
+      ));
+    }
+    const feeLamports = Math.floor(batch.length * RENT_PER_ACCOUNT * LAMPORTS_PER_SOL * FEE_PCT);
+    if (feeLamports > 0) {
+      tx.add(SystemProgram.transfer({
+        fromPubkey: walletPublicKey, toPubkey: FEE_WALLET, lamports: feeLamports,
+      }));
+    }
+    transactions.push({ tx, count: batch.length, accounts: batch, feeLamports });
   }
 
   return transactions;
