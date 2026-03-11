@@ -1156,3 +1156,28 @@ a:hover {
     font-size: 18px;
   }
 }
+
+/* Quick action buttons */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.btn-lg {
+  padding: 16px 24px !important;
+  font-size: 1.1rem !important;
+  border-radius: 12px !important;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%) !important;
+  color: #0a0a0f !important;
+  font-weight: 700 !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 255, 136, 0.3);
+}

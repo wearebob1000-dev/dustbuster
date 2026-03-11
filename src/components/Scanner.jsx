@@ -188,6 +188,30 @@ export default function Scanner() {
             </div>
           </div>
 
+          {/* Quick action buttons */}
+          <div className="quick-actions">
+            <button
+              className="btn btn-primary btn-lg"
+              onClick={() => {
+                const cleanable = accounts.filter(a => a.category === 'zero' || a.category === 'dead');
+                setSelected(new Set(cleanable.map(a => a.address)));
+              }}
+            >
+              🧹 Select All Dead & Zero ({stats.zero + stats.dead} accounts → ~{((stats.zero + stats.dead) * RENT_PER_ACCOUNT).toFixed(4)} SOL)
+            </button>
+            {stats.dust > 0 && (
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  const all = accounts.filter(a => a.category !== 'valuable');
+                  setSelected(new Set(all.map(a => a.address)));
+                }}
+              >
+                Select All Including Dust ({stats.zero + stats.dead + stats.dust} accounts)
+              </button>
+            )}
+          </div>
+
           {/* Token table */}
           <TokenTable
             accounts={accounts}
