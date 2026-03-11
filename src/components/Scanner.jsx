@@ -8,7 +8,7 @@ import CleanupProgress from './CleanupProgress';
 
 export default function Scanner() {
   const { connection } = useConnection();
-  const { publicKey, signTransaction } = useWallet();
+  const { publicKey, signTransaction, signAllTransactions } = useWallet();
   const { accounts, scanning, scanProgress, error, scan } = useTokenAccounts();
   const [selected, setSelected] = useState(new Set());
   const [cleanupProgress, setCleanupProgress] = useState(null);
@@ -61,45 +61,67 @@ export default function Scanner() {
       results: [],
     });
 
-    let completed = 0;
-    let failed = 0;
-    const results = [];
+    try {
+      // Get a fresh blockhash for all transactions
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
 
-    for (let i = 0; i < batches.length; i++) {
-      setCleanupProgress((prev) => ({
-        ...prev,
-        currentBatch: i + 1,
-      }));
-
-      try {
-        const { tx, count } = batches[i];
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash();
+      // Prepare all transactions with the same blockhash
+      const rawTxs = batches.map(({ tx }) => {
         tx.recentBlockhash = blockhash;
         tx.lastValidBlockHeight = lastValidBlockHeight;
         tx.feePayer = publicKey;
+        return tx;
+      });
 
-        const signed = await signTransaction(tx);
-        const sig = await connection.sendRawTransaction(signed.serialize(), {
-          skipPreflight: false,
-        });
-        await connection.confirmTransaction(
-          { signature: sig, blockhash, lastValidBlockHeight },
-          'confirmed'
-        );
+      // Sign ALL transactions in one popup
+      setCleanupProgress((prev) => ({ ...prev, status: 'signing' }));
+      const signedTxs = signAllTransactions
+        ? await signAllTransactions(rawTxs)
+        : await Promise.all(rawTxs.map((tx) => signTransaction(tx)));
 
-        completed += count;
-        results.push({ success: true, sig });
-      } catch (err) {
-        failed += batches[i].count;
-        results.push({ success: false, error: err.message });
+      // Send them one by one
+      let completed = 0;
+      let failed = 0;
+      const results = [];
+
+      for (let i = 0; i < signedTxs.length; i++) {
+        setCleanupProgress((prev) => ({
+          ...prev,
+          status: 'processing',
+          currentBatch: i + 1,
+        }));
+
+        try {
+          const sig = await connection.sendRawTransaction(
+            signedTxs[i].serialize(),
+            { skipPreflight: true }
+          );
+          await connection.confirmTransaction(
+            { signature: sig, blockhash, lastValidBlockHeight },
+            'confirmed'
+          );
+
+          completed += batches[i].count;
+          results.push({ success: true, sig });
+        } catch (err) {
+          failed += batches[i].count;
+          results.push({ success: false, error: err.message });
+        }
+
+        setCleanupProgress((prev) => ({ ...prev, completed, failed, results }));
       }
 
-      setCleanupProgress((prev) => ({ ...prev, completed, failed, results }));
+      setCleanupProgress((prev) => ({ ...prev, status: 'done' }));
+    } catch (err) {
+      // User rejected the signing popup
+      setCleanupProgress((prev) => ({
+        ...prev,
+        status: 'done',
+        results: [{ success: false, error: err.message }],
+      }));
     }
-
-    setCleanupProgress((prev) => ({ ...prev, status: 'done' }));
-  }, [publicKey, selected, accounts, connection, signTransaction]);
+  }, [publicKey, selected, accounts, connection, signTransaction, signAllTransactions]);
 
   const handleCleanupClose = useCallback(() => {
     setCleanupProgress(null);
