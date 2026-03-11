@@ -6,7 +6,7 @@ import {
 import { PublicKey, Transaction } from '@solana/web3.js';
 
 export const RENT_PER_ACCOUNT = 0.00203928; // SOL rent for a token account
-const BATCH_SIZE = 15; // Conservative batch size to stay within compute limits
+const BATCH_SIZE = 7; // Keep transactions under 1232 byte limit (burn + close = ~2 instructions per account)
 
 // Build batched transactions for cleanup
 export function buildCleanupTransactions(accounts, walletPublicKey) {
