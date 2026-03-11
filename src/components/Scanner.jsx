@@ -62,8 +62,8 @@ export default function Scanner() {
     });
 
     try {
-      // Process in waves of 10 txs to stay within blockhash window
-      const WAVE_SIZE = 10;
+      // Process in waves — sign once per wave, send all in parallel
+      const WAVE_SIZE = 20;
       let completed = 0;
       let failed = 0;
       const results = [];
@@ -97,29 +97,31 @@ export default function Scanner() {
         );
         const sendResults = await Promise.all(sendPromises);
 
-        // Confirm successful sends
-        for (const sr of sendResults) {
-          const batchIdx = w + sr.idx;
-          setCleanupProgress((prev) => ({ ...prev, currentBatch: batchIdx + 1 }));
-
-          if (!sr.ok) {
-            failed += wave[sr.idx].count;
-            results.push({ success: false, error: sr.err.message });
-          } else {
-            try {
-              await connection.confirmTransaction(
-                { signature: sr.sig, blockhash, lastValidBlockHeight },
-                'confirmed'
-              );
-              completed += wave[sr.idx].count;
-              results.push({ success: true, sig: sr.sig });
-            } catch (err) {
-              failed += wave[sr.idx].count;
-              results.push({ success: false, error: err.message });
-            }
+        // Confirm all sends in parallel
+        const confirmPromises = sendResults.map(async (sr) => {
+          if (!sr.ok) return { ...sr, confirmed: false };
+          try {
+            await connection.confirmTransaction(
+              { signature: sr.sig, blockhash, lastValidBlockHeight },
+              'confirmed'
+            );
+            return { ...sr, confirmed: true };
+          } catch (err) {
+            return { ...sr, confirmed: false, err };
           }
-          setCleanupProgress((prev) => ({ ...prev, completed, failed, results }));
+        });
+        const confirmResults = await Promise.all(confirmPromises);
+
+        for (const cr of confirmResults) {
+          if (!cr.ok || !cr.confirmed) {
+            failed += wave[cr.idx].count;
+            results.push({ success: false, error: cr.err?.message || 'Send failed' });
+          } else {
+            completed += wave[cr.idx].count;
+            results.push({ success: true, sig: cr.sig });
+          }
         }
+        setCleanupProgress((prev) => ({ ...prev, currentBatch: w + wave.length, completed, failed, results }));
       }
 
       setCleanupProgress((prev) => ({ ...prev, status: 'done' }));

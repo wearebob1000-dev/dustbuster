@@ -8,8 +8,8 @@ import { PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana
 export const RENT_PER_ACCOUNT = 0.00203928; // SOL rent for a token account
 export const FEE_PCT = 0.05; // 5% service fee
 export const FEE_WALLET = new PublicKey('4pATFER7WrbRNAicBaMGEWi546ChfCtqNorynakuwMQ5');
-const CLOSE_ONLY_BATCH = 11; // Zero-balance: just close (no fee instruction needed per batch now)
-const BURN_CLOSE_BATCH = 5;  // Has balance: burn+close
+const CLOSE_ONLY_BATCH = 20; // Zero-balance: just close (~35 bytes each, fits ~29 but safe at 20)
+const BURN_CLOSE_BATCH = 10; // Has balance: burn+close (~70 bytes each)
 
 // Build batched transactions for cleanup
 // Fee is collected as a SINGLE final transaction after all closes succeed
