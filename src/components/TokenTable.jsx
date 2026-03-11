@@ -2,6 +2,7 @@ const CATEGORY_STYLES = {
   zero: { icon: '⚫', badgeClass: 'badge-zero', label: 'Zero Balance' },
   dead: { icon: '💀', badgeClass: 'badge-dead', label: 'Dead' },
   dust: { icon: '🟡', badgeClass: 'badge-dust', label: 'Dust' },
+  unverified: { icon: '⚠️', badgeClass: 'badge-dust', label: 'Unverified' },
   valuable: { icon: '✅', badgeClass: 'badge-valuable', label: 'Has Value' },
 };
 
@@ -19,7 +20,7 @@ function truncateMint(mint) {
 }
 
 export default function TokenTable({ accounts, selected, onToggle, onSelectAll }) {
-  const cleanable = accounts.filter((a) => a.category !== 'valuable');
+  const cleanable = accounts.filter((a) => a.category !== 'valuable' && a.category !== 'unverified');
   const deadAccounts = accounts.filter(
     (a) => a.category === 'zero' || a.category === 'dead'
   );
@@ -62,7 +63,7 @@ export default function TokenTable({ accounts, selected, onToggle, onSelectAll }
             {accounts.map((acct) => {
               const style = CATEGORY_STYLES[acct.category];
               const isSelected = selected.has(acct.address);
-              const isCleanable = acct.category !== 'valuable';
+              const isCleanable = acct.category !== 'valuable' && acct.category !== 'unverified';
 
               return (
                 <tr

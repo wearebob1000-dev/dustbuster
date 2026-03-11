@@ -65,11 +65,16 @@ export function useTokenAccounts() {
           hasLiquidity: false,
           priceUsd: 0,
           liquidity: 0,
+          verified: false,
         };
         const valueUsd = acct.balance * info.priceUsd;
 
         let category, categoryLabel;
-        if (!info.hasLiquidity) {
+        if (!info.verified) {
+          // Could not verify liquidity — DO NOT allow burning
+          category = 'unverified';
+          categoryLabel = '⚠️ Unverified';
+        } else if (!info.hasLiquidity) {
           category = 'dead';
           categoryLabel = 'Dead Token';
         } else if (valueUsd < 0.5) {
@@ -95,8 +100,8 @@ export function useTokenAccounts() {
         });
       }
 
-      // Sort: zero first, then dead, then dust, then valuable
-      const order = { zero: 0, dead: 1, dust: 2, valuable: 3 };
+      // Sort: zero first, then dead, then dust, then unverified, then valuable
+      const order = { zero: 0, dead: 1, dust: 2, unverified: 3, valuable: 4 };
       categorized.sort((a, b) => order[a.category] - order[b.category]);
 
       setAccounts(categorized);

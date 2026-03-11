@@ -155,9 +155,10 @@ export default function Scanner() {
     zero: accounts.filter((a) => a.category === 'zero').length,
     dead: accounts.filter((a) => a.category === 'dead').length,
     dust: accounts.filter((a) => a.category === 'dust').length,
+    unverified: accounts.filter((a) => a.category === 'unverified').length,
     valuable: accounts.filter((a) => a.category === 'valuable').length,
     totalRent: accounts
-      .filter((a) => a.category !== 'valuable')
+      .filter((a) => a.category !== 'valuable' && a.category !== 'unverified')
       .reduce((sum, a) => sum + a.rentSol, 0),
   };
 
@@ -241,15 +242,9 @@ export default function Scanner() {
               🧹 Select All Dead & Zero ({stats.zero + stats.dead} accounts → ~{((stats.zero + stats.dead) * RENT_PER_ACCOUNT).toFixed(4)} SOL)
             </button>
             {stats.dust > 0 && (
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  const all = accounts.filter(a => a.category !== 'valuable');
-                  setSelected(new Set(all.map(a => a.address)));
-                }}
-              >
-                Select All Including Dust ({stats.zero + stats.dead + stats.dust} accounts)
-              </button>
+              <p style={{ fontSize: '0.8rem', color: 'rgba(255,200,100,0.7)', margin: '8px 0 0' }}>
+                🟡 {stats.dust} dust tokens have some liquidity — review individually before burning
+              </p>
             )}
           </div>
 
