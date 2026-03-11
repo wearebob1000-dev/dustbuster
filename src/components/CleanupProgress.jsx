@@ -114,7 +114,7 @@ export default function CleanupProgress({ progress, onClose }) {
             {successBatches > 0 && (
               <a
                 href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
-                  `Just recovered ~${reclaimedSol.toFixed(2)} SOL from ${actualClosed} dead and dust token accounts using @DustBusterApp 🧹\n\nReclaim your locked SOL 👇\nhttps://dustbuster.app`
+                  `Just recovered ~${reclaimedSol.toFixed(2)} SOL from ${actualClosed} dead and dust token accounts using DustBuster 🧹\n\nReclaim your locked SOL 👇\nhttps://dustbuster.app`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
