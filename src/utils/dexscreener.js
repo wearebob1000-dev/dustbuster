@@ -1,5 +1,31 @@
 const DEXSCREENER_API = 'https://api.dexscreener.com/latest/dex/tokens';
 
+// Fetch token names from Jupiter's token list
+let _tokenNameCache = null;
+export async function getTokenNames(mints) {
+  const names = new Map();
+  try {
+    // Jupiter strict list has most known tokens
+    if (!_tokenNameCache) {
+      const res = await fetch('https://tokens.jup.ag/tokens?tags=verified,community');
+      if (res.ok) {
+        const tokens = await res.json();
+        _tokenNameCache = new Map();
+        for (const t of tokens) {
+          _tokenNameCache.set(t.address, { name: t.name, symbol: t.symbol });
+        }
+      }
+    }
+    if (_tokenNameCache) {
+      for (const mint of mints) {
+        const info = _tokenNameCache.get(mint);
+        if (info) names.set(mint, info);
+      }
+    }
+  } catch { /* fail silently */ }
+  return names;
+}
+
 // Batch check liquidity for multiple mints
 // DexScreener supports comma-separated mints (up to ~30 at a time)
 export async function checkLiquidity(mints) {
@@ -39,9 +65,11 @@ export async function checkLiquidity(mints) {
           const liq = best.liquidity?.usd || 0;
           const price = parseFloat(best.priceUsd || '0');
           results.set(mint, {
-            hasLiquidity: liq > 100, // $100 minimum to consider "has liquidity"
+            hasLiquidity: liq > 100,
             priceUsd: price,
             liquidity: liq,
+            name: best.baseToken?.name || '',
+            symbol: best.baseToken?.symbol || '',
           });
         }
       }

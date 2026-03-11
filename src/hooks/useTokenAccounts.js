@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { fetchTokenAccounts, RENT_PER_ACCOUNT } from '../utils/solana';
-import { checkLiquidity } from '../utils/dexscreener';
+import { checkLiquidity, getTokenNames } from '../utils/dexscreener';
 
 export function useTokenAccounts() {
   const { connection } = useConnection();
@@ -36,10 +36,16 @@ export function useTokenAccounts() {
         liquidityMap = await checkLiquidity(mintsToCheck);
       }
 
+      // Fetch token names for all mints
+      const allMints = [...new Set(raw.map(a => a.mint))];
+      setScanProgress(`Looking up token names...`);
+      const tokenNames = await getTokenNames(allMints);
+
       // Categorize all accounts
       const categorized = [];
 
       for (const acct of zeroBalance) {
+        const nameInfo = tokenNames.get(acct.mint) || {};
         categorized.push({
           ...acct,
           category: 'zero',
@@ -49,6 +55,8 @@ export function useTokenAccounts() {
           valueUsd: 0,
           liquidity: 0,
           rentSol: RENT_PER_ACCOUNT,
+          tokenName: nameInfo.name || '',
+          tokenSymbol: nameInfo.symbol || '',
         });
       }
 
@@ -72,6 +80,7 @@ export function useTokenAccounts() {
           categoryLabel = 'Has Value';
         }
 
+        const nameInfo = tokenNames.get(acct.mint) || {};
         categorized.push({
           ...acct,
           category,
@@ -81,6 +90,8 @@ export function useTokenAccounts() {
           valueUsd,
           liquidity: info.liquidity,
           rentSol: RENT_PER_ACCOUNT,
+          tokenName: info.name || nameInfo.name || '',
+          tokenSymbol: info.symbol || nameInfo.symbol || '',
         });
       }
 

@@ -50,7 +50,8 @@ export default function TokenTable({ accounts, selected, onToggle, onSelectAll }
             <tr>
               <th style={{ width: 44 }} />
               <th>Status</th>
-              <th>Token Mint</th>
+              <th>Token</th>
+              <th className="hide-mobile">Mint</th>
               <th className="text-right hide-mobile">Balance</th>
               <th className="text-right hide-mobile">Value</th>
               <th className="text-right hide-mobile">Liquidity</th>
@@ -83,11 +84,31 @@ export default function TokenTable({ accounts, selected, onToggle, onSelectAll }
                       {style.icon} {acct.categoryLabel || style.label}
                     </span>
                   </td>
-                  <td className="td-mono">
+                  <td>
                     <a
                       href={`https://solscan.io/token/${acct.mint}`}
                       target="_blank"
                       rel="noopener noreferrer"
+                      style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                      {acct.tokenSymbol ? (
+                        <span>
+                          <strong style={{ color: '#fff' }}>{acct.tokenSymbol}</strong>
+                          {acct.tokenName && (
+                            <span style={{ opacity: 0.5, fontSize: '0.8rem', marginLeft: '6px' }}>{acct.tokenName}</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="td-mono" style={{ opacity: 0.6 }}>{truncateMint(acct.mint)}</span>
+                      )}
+                    </a>
+                  </td>
+                  <td className="td-mono hide-mobile">
+                    <a
+                      href={`https://solscan.io/token/${acct.mint}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ opacity: 0.5 }}
                     >
                       {truncateMint(acct.mint)}
                     </a>
